@@ -14,51 +14,20 @@ typedef struct {
     char enreType[100]; // Type d'enregistrement
     // Autres informations de contrôle
 } entet;
-
 typedef struct Record {
     entet header;
     char info[200];
     int next;
     int nb;
-
     struct Record* svt;
 } Record;
 
+typedef Record* fichier;
 typedef struct {
     Record* r;
     entetf t;
     FILE* physicalFile;
-    }fichier;
-/*void lirePhysicalFile(const char* fileName) {
-    FILE* physicalFile = fopen(fileName, "rb");
-
-    if (physicalFile == NULL) {
-        fprintf(stderr, "Error opening the physical file for reading.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    entetf fileHeader;
-    fread(&fileHeader, sizeof(entetf), 1, physicalFile);
-
-    printf("Number of blocks: %d\n", fileHeader.nbrbloc);
-    printf("Number of deleted records: %d\n", fileHeader.nbrsup);
-    printf("Total size of records: %d\n", fileHeader.taillef);
-
-    fseek(physicalFile, sizeof(entetf), SEEK_SET);  // Move to the beginning of records
-
-    Record record;
-
-    for (int i = 0; i < fileHeader.nbrbloc; i++) {
-        fread(&record.header, sizeof(entet), 1, physicalFile);
-        fread(record.info, record.header.enreSize, 1, physicalFile);
-
-        printf("Record Size: %d\n", record.header.enreSize);
-        printf("Record Data: %s\n", record.info);
-        printf("\n");
-    }
-
-    fclose(physicalFile);
-}*/
+    }fichie;
 void lirePhysicalFile(const char* fileName) {
     FILE* physicalFile = fopen(fileName, "rb");
 
@@ -78,25 +47,15 @@ void lirePhysicalFile(const char* fileName) {
 
     Record record;
 
-    for (int i = 0; i < fileHeader.nbrbloc; i++) {
-        fread(&record.header, sizeof(entet), 1, physicalFile);
+    while (fread(&record.header, sizeof(entet), 1, physicalFile) == 1) {
         fread(record.info, record.header.enreSize, 1, physicalFile);
-
-        // Check if the record is marked as deleted
-        if (record.nb != -1) {
-            printf("Record Size: %d\n", record.header.enreSize);
-            printf("Record Data: %s\n", record.info);
-            printf("\n");
-        } else {
-            // Optionally, you can indicate that the record is deleted
-            printf("Record at index %d is marked as deleted.\n", i);
-        }
+        printf("Record Size: %d\n", record.header.enreSize);
+        printf("Record Data: %s\n", record.info);
+        printf("\n");
     }
 
     fclose(physicalFile);
 }
-
-
 void lireetudiant(char etudiant[], int* recordCounter) {
     char temp[60];
 
@@ -105,23 +64,18 @@ void lireetudiant(char etudiant[], int* recordCounter) {
         fgets(temp, sizeof(temp), stdin);
         temp[strcspn(temp, "\n")] = '\0'; // Remove the newline character
     } while (temp[strlen(temp) - 1] != '#');
-
     strcpy(etudiant, temp);
-
     do {
         printf("Enter the surname and end with #:\n");
         fgets(temp, sizeof(temp), stdin);
         temp[strcspn(temp, "\n")] = '\0';
     } while (temp[strlen(temp) - 1] != '#');
-
     strcat(etudiant, temp);
-
     int validMatricule = 0;
     do {
         printf("Enter the matricule as a number and end with !:\n");
         fgets(temp, sizeof(temp), stdin);
         temp[strcspn(temp, "\n")] = '\0';
-
         // Check if the input is a number
         validMatricule = 1;
         for (int i = 0; i < strlen(temp) - 1; i++) {
@@ -130,19 +84,21 @@ void lireetudiant(char etudiant[], int* recordCounter) {
                 break;
             }
         }
-
         if (temp[strlen(temp) - 1] == '!') {
             (*recordCounter)++;
         }
-
         if (!validMatricule) {
             printf("Invalid input. Matricule must be a number.\n");
         }
-
     } while (temp[strlen(temp) - 1] != '!' || !validMatricule);
 
     strcat(etudiant, temp);
 }
+
+void insertRecord(fichier* file, const char* data, int dataSize) {
+    // Create a new record
+    Record* newRecord = malloc(sizeof(Record));
+    if (newRecord == NULL) {
 fichier* createFile() {
     fichier* newFile = malloc(sizeof(fichier));
     if (newFile == NULL) {
@@ -150,6 +106,9 @@ fichier* createFile() {
         exit(EXIT_FAILURE);
     }
 
+    // Set the size and allocate memory for the data
+    newRecord->header.enreSize = dataSize;
+    strcpy(newRecord->info, data);
     newFile->r = NULL;  // Initialize the record pointer to NULL
     newFile->t.nbrbloc = 0;
     newFile->t.nbrsup = 0;
@@ -189,10 +148,7 @@ void insertRecord(fichier* file, const char* data, int dataSize) {
     // Create a new record
     Record newRecord;
     newRecord.header.enreSize = dataSize;
-
-    // Use strncpy to copy data into info and ensure null termination
-    strncpy(newRecord.info, data, sizeof(newRecord.info) - 1);
-    newRecord.info[sizeof(newRecord.info) - 1] = '\0';
+    strcpy(newRecord.info, data);
 
     // Seek to the end of the physical file to append the new record
     fseek(file->physicalFile, 0, SEEK_END);
@@ -205,20 +161,32 @@ void insertRecord(fichier* file, const char* data, int dataSize) {
     file->t.nbrbloc++;
     file->t.taillef += dataSize;
 
+    // Link the new record to the current head of the file
+    newRecord->next = -1; // Set the 'next' field to -1 as it's a new record
+    newRecord->nb = 1;    // Set the number of records in the block to 1
+    newRecord->svt = *file;
     // Seek back to the beginning of the file and update the header
     fseek(file->physicalFile, 0, SEEK_SET);
     fwrite(&(file->t), sizeof(entetf), 1, file->physicalFile);
 
+    // Update the head of the file to the new record
+    *file = newRecord;
     // Optional: Seek back to the end of the file for future appends
     fseek(file->physicalFile, 0, SEEK_END);
 }
-
 void displayFile(const fichier* file) {
     entetf t = file->t;
     printf("Records in the File: %d\n", t.nbrbloc);
 
+void displayFile(const fichier file) {
+    printf("Records in the File:\n");
     fseek(file->physicalFile, sizeof(entetf), SEEK_SET);  // Move to the beginning of records
 
+    // Traverse the linked list starting from the head (file)
+    for (const Record* current = file; current != NULL; current = current->svt) {
+        printf("Record Size: %d\n", current->header.enreSize);
+        printf("Record Data: %s\n", current->info);
+        printf("\n");
     Record record;
 
     while (fread(&record.header, sizeof(entet), 1, file->physicalFile) == 1) {
@@ -230,42 +198,6 @@ void displayFile(const fichier* file) {
         }
     }
 }
-void rechercheEtudiant(const fichier* file, const char* matricule) {
-    fseek(file->physicalFile, sizeof(entetf), SEEK_SET);  // Move to the beginning of records
-
-    Record record;
-    int recordIndex = 0;
-
-    while (fread(&record.header, sizeof(entet), 1, file->physicalFile) == 1) {
-        fread(record.info, record.header.enreSize, 1, file->physicalFile);
-
-        // Check if the record is not marked as deleted
-        if (record.nb != -1) {
-            // Extract matricule from the record's info and compare
-            char extractedMatricule[20];  // Adjust the size accordingly
-            int result = sscanf(record.info, "%*[^#]#%*[^#]#%[^#!]", extractedMatricule);
-
-            if (result == 1) {
-                if (strcmp(extractedMatricule, matricule) == 0) {
-                    // Student found, display information
-                    printf("Student found at index %d:\n", recordIndex);
-                    printf("Record Size: %d\n", record.header.enreSize);
-                    printf("Record Data: %s\n", record.info);
-                    return;
-                }
-            } else {
-                printf("Error extracting matricule from record %d.\n", recordIndex);
-            }
-        }
-
-        recordIndex++;
-    }
-
-    // If the loop completes, the student was not found
-    printf("Student with matricule %s not found.\n", matricule);
-}
-
-
 
 void deleteRecord(fichier* file, int recordIndex) {
     // Check if the record index is within the valid range
@@ -303,90 +235,7 @@ void deleteRecord(fichier* file, int recordIndex) {
 
     printf("Record deleted successfully.\n");
 }
-void deleteRecordByName(fichier* file, const char* name) {
-    Record record;
 
-    // Move to the beginning of the file
-    fseek(file->physicalFile, sizeof(entetf), SEEK_SET);
-
-    int currentIndex = 0;
-
-    // Traverse the file to find the record to delete
-    while (fread(&record.header, sizeof(entet), 1, file->physicalFile) == 1) {
-        fread(record.info, record.header.enreSize, 1, file->physicalFile);
-
-        // Check if the record is not marked as deleted
-        if (record.nb != -1) {
-            // Extract matricule from the record's info and compare
-            char extractedName[100];  // Adjust the size accordingly
-            int result = sscanf(record.info, "%[^#!]", extractedName);
-
-            if (result == 1) {
-                if (strcmp(extractedName, name) == 0) {
-                    // Found the record, mark it as deleted
-                    record.nb = -1;
-
-                    // Move back to the position of the record in the file
-                    fseek(file->physicalFile, -sizeof(entet) - record.header.enreSize, SEEK_CUR);
-
-                    // Write the updated record to mark it as deleted
-                    fwrite(&record.header, sizeof(entet), 1, file->physicalFile);
-                    fwrite(record.info, record.header.enreSize, 1, file->physicalFile);
-
-                    // Update the logical file structure
-                    file->t.nbrsup++;
-
-                    // Move back to the end of the file
-                    fseek(file->physicalFile, 0, SEEK_END);
-
-                    printf("Record deleted successfully.\n");
-                    return;
-                }
-            } else {
-                printf("Error extracting name from record %d.\n", currentIndex);
-            }
-            currentIndex++;
-        }
-    }
-
-    // If the loop completes, the record to delete was not found
-    printf("Record not found.\n");
-}
-
-
-
-/*void deleteRecordByName(fichier* file, const char* name) {
-    Record* current = file->r;
-    Record* previous = NULL;
-    int currentIndex = 0;
-
-    // Traverse the linked list to find the record to delete
-    while (current != NULL) {
-        if (strcmp(current->info, name) == 0) {
-            // Found the record, delete it
-            if (previous == NULL) {
-                // The record is the first one, update the file header
-                file->r = current->svt;
-            } else {
-                previous->svt = current->svt;
-            }
-
-            // Mark the record as deleted in the file header
-            file->t.nbrsup++;
-            break;
-        }
-
-        previous = current;
-        current = current->svt;
-        currentIndex++;
-    }
-
-    // Optional: Seek back to the beginning of the file and update the header
-    fseek(file->physicalFile, 0, SEEK_SET);
-    fwrite(&(file->t), sizeof(entetf), 1, file->physicalFile);
-
-    printf("Record deleted successfully.\n");
-}*/
 
 void transmitData(const char* data, int dataSize, char buffer[]) {
     int i, j;
@@ -395,22 +244,19 @@ void transmitData(const char* data, int dataSize, char buffer[]) {
         if (j == BUFFER_SIZE - 1) {
             buffer[j] = '\0'; // Null-terminate the buffer
             printf("Transmitting: %s\n", buffer);
-
             j = 0;
         }
-
         buffer[j] = data[i];
     }
-
     if (j > 0) {
         buffer[j] = '\0';
         printf("Transmitting: %s\n", buffer);
     }
 }
-
-/*int main() {
+int main() {
     char etudiant[100];
     char buffer[BUFFER_SIZE];
+    fichier f = NULL;
 
     // Create a new file
     fichier* f = createFile();
@@ -421,66 +267,46 @@ void transmitData(const char* data, int dataSize, char buffer[]) {
     int recordCounter = 0;
     char continueInput;
 
-
-  /* do {
+    do {
         lireetudiant(etudiant, &recordCounter);
         transmitData(etudiant, strlen(etudiant), buffer);
+        insertRecord(&f, buffer, strlen(buffer));
         insertRecord(f, buffer, strlen(buffer));
 
         printf("Do you want to enter another student record? (y/n): ");
+        scanf(" %c", &continueInput); // Note the space before %c to consume the newline character
         scanf(" %c", &continueInput);
         getchar(); // Consume the newline character left in the buffer
 
     } while (continueInput == 'y' || continueInput == 'Y');
 
-    system("cls");
-     lirePhysicalFile("your_physical_file.bin");
+    printf("Total number of records: %d\n", recordCounter);
+    displayFile(f);
 
+    // Free memory if needed
+    while (f != NULL) {
+        Record* temp = f;
+        f = f->svt;
+        free(temp);
+    // Option to delete a record
+    int deleteIndex;
+    printf("Enter the index of the record to delete (or -1 to skip): ");
+    scanf("%d", &deleteIndex);
 
-    rechercheEtudiant(f,"741852963");
-    deleteRecordByName(f,"kamiri");
-    lirePhysicalFile("your_physical_file.bin");
-
-    //Close the physical file
-    if (f->physicalFile != NULL) {
-        fclose(f->physicalFile);
+    if (deleteIndex >= 0) {
+        deleteRecord(f, deleteIndex);
+        displayFile(f);
     }
-    // Free memory for the file structure
-    free(f->r);
-    free(f);
-
-    return 0;
-}*/int main() {
-    char etudiant[100];
-    char buffer[BUFFER_SIZE];
-
-    // Create a new file
-    fichier* f = createFile();
-
-    // Open the physical file and associate it with the logical file structure
-    openFile(f, "your_physical_file.bin");
-
-    // Insert some records
-    insertRecord(f, "John#Doe#12345!", 16);
-    insertRecord(f, "Alice#Smith#67890!", 18);
-    insertRecord(f, "Bob#Johnson#54321!", 18);
-
-    // Display the file before deletion
-    printf("Before Deletion:\n");
-    displayFile(f);
-
-    // Delete a record by name
-    deleteRecordByName(f, "Alice#Smith#67890!");
-
-    // Display the file after deletion
-    printf("\nAfter Deletion:\n");
-    displayFile(f);
 
     // Close the physical file
     if (f->physicalFile != NULL) {
         fclose(f->physicalFile);
     }
+
+    lirePhysicalFile("your_physical_file.bin");
+
     // Free memory for the file structure
+    free(f->r);
     free(f);
 
     return 0;

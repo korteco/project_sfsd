@@ -1,0 +1,6 @@
+# depslib dependency file v1.0
+1705691496 source:c:\users\hp\downloads\our-project\project_sfsd\da\main.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+
