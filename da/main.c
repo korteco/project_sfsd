@@ -28,6 +28,9 @@ typedef struct {
     entetf t;
     FILE* physicalFile;
     }fichie;
+
+
+
 void lirePhysicalFile(const char* fileName) {
     FILE* physicalFile = fopen(fileName, "rb");
 
