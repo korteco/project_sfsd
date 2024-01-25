@@ -19,7 +19,7 @@ typedef struct {
 } TEn_Tete;
 
 typedef struct TBloc {
-    char info[20];
+    char t[MAX];
     int suiv;
     int nb;
 
@@ -31,7 +31,7 @@ typedef struct TBloc {
 typedef struct {
     TBloc* r;
     TEn_Tete* en_tete;
-    FILE* physicalFile;
+    FILE* f;
     }Lnovnc;
 
 
@@ -99,7 +99,7 @@ void ecrire_dire(Lnovnc *fichier,int i,TBloc *buf)//ecriture directe du contenu 
 /****************LECTURE DIRECTE*************/
 
 
-void lire_dire(LNOF *fichier,int i,TBloc *buf)//lecture directe du contenu de fichier � la position i ds le buf
+void lire_dire(Lnovnc *fichier,int i,TBloc *buf)//lecture directe du contenu de fichier � la position i ds le buf
 {   rewind(fichier->f);
     fseek(fichier->f,sizeof(TEn_Tete)+i*sizeof(TBloc),SEEK_SET);//se positionner � la place exacte
     fread(buf,sizeof(TBloc),1,fichier->f);//lecture
@@ -109,7 +109,7 @@ void lire_dire(LNOF *fichier,int i,TBloc *buf)//lecture directe du contenu de fi
 /****************FERMITUR******************/
 
 
-void fermer (LNOF *fichier)//fermer un fichier
+void fermer (Lnovnc *fichier)//fermer un fichier
 {   rewind(fichier->f);//on se positionne au debut de fichier
     fwrite(fichier->en_tete,sizeof(TEn_Tete),1,fichier->f);//on enregistre les modifications effectu�es sur l'en_tete
     fclose(fichier->f);//on ferme le fichier
@@ -120,10 +120,16 @@ void fermer (LNOF *fichier)//fermer un fichier
 
 
 
+
+
  /************************************recherch**********************************/
 
-  void recherche (LNOF *fichier,char nom_fich[30],int cle,int *num_bloc,int *pos,int *trouv)//module de recherche de la cle ds un fichier
-{TBloc buf;//declarer un buffer
+
+
+
+  void recherche (Lnovnc *fichier,char nom_fich[30],int cle,int *num_bloc,int *pos,int *trouv)//module de recherche de la cle ds un fichier
+{
+    TBloc buf;//declarer un buffer
 int i,j,n;//donne le nummero de bloc courant
 
 ouvrir(fichier,nom_fich,'a');//ouvrir le fichier en mode ancien
@@ -134,15 +140,18 @@ ouvrir(fichier,nom_fich,'a');//ouvrir le fichier en mode ancien
         trouv=-1;} //retourner trouv � faux
         else
         {if((i!=-1)&&(n!=0))//sinon
+
         {
             *trouv=0;*pos=0;j=0;//initialiser les paramettres
             while((i!=-1)&&(*trouv==0))//tq on est pas arriv� � la fin de fichier et on a pas trouv� la cl�
             {
                 lire_dire(fichier,i,&buf);//lire le bloc i
-                if(buf.NbArticle!=0)//tester s'il n'est pas vide
+                if(buf.nb!=0)//tester s'il n'est pas vide
                 {
-                    while((j<=MAX)&&(*trouv==0))//tq c'est pas la fin de tab d'enregistrements et non trouv
-                    {if((buf.t[j].cle==cle)&&(buf.t[j].efface==0))//verifier chaque case si elle n'est pas effac�e
+
+
+    while((j<=MAX)&&(*trouv==0))//tq c'est pas la fin de tab d'enregistrements et non trouv
+    {if((buf.t[j].cle==cle)&&(buf.t[j].efface==0))//verifier chaque case si elle n'est pas effac�e
                         {//si v�rifi�
                             *trouv=1;//mettre trouv � vrai
                             *num_bloc=i;//retourner le numero de bloc
@@ -220,7 +229,7 @@ TBloc buf;
 	printf("\t\t\t  L'Affichage  \n");
 	printf("\t\t\t==============\n");
 	printf("\t\t+----------+----------+\n");
-	printf("\t\t|  La cle  | La Valeur|\n");
+	printf("\t\t| matric  | etudiant|\n");
 	printf("\t\t+----------+----------+\n");
         while(i!=-1)//tant qu'on est pas arriv� � la fin de fichier
     {
@@ -257,3 +266,163 @@ if(fichier->f)//si le fichier existe on affiche toutes les caracteristiques
     printf("\n\t***Numero du dernier bloc=%d",en_tete(fichier,3));}
     fermer(fichier);
 }
+
+
+
+/*************MENU***********/
+void menu (void)
+
+		{printf("\n\t\t               <<<<<<<LES FICHIERS Lnovnc>>>>>>>>");
+		    printf ("\n\t\t ________________________________________________________________\n");
+		printf ("\t\t|\t                                                        |\n");
+	    printf ("\t\t|                   <<<< MENU PRINCIPALE >>>>                   |\n");
+	    printf ("\t\t|\t                                                        |\n");
+	    printf ("\t\t|_______________________________________________________________|\n");
+	    printf ("\t\t|\t                                                        |\n");
+		printf ("\t\t|\t -1. Creer un nouveau fichier vide.                     |\n");
+		printf ("\t\t|\t                                                        |\n");
+		printf ("\t\t|\t -2. Insertion dans un fichier existant ou non.         |\n");
+		printf ("\t\t|\t                                                        |\n");
+		printf ("\t\t|\t -3. Supprimer logiquement un etudiant.           |\n");
+		printf ("\t\t|\t                                                        |\n");
+		printf ("\t\t|\t -4. Affichage de toute les etudiant.                       |\n");
+		printf ("\t\t|\t                                                        |\n");
+		printf ("\t\t|\t -5. Affichage de l'entete.                             |\n");
+		printf ("\t\t|\t                                                        |\n");
+		printf ("\t\t|\t -6. Recherche d'un etudiant.                     |\n");
+		printf ("\t\t|\t                                                        |\n");
+		printf ("\t\t|\t                                                        |\n");
+		printf ("\t\t|\t -7 quitter                                            |\n");
+		printf ("\t\t|\t                                                        |\n");
+        printf ("\t\t|_______________________________________________________________|\n");
+
+
+		}
+
+
+		int main()
+{  TBloc buf;
+char nom_fich[30];
+int choix,continu,nb_enreg,i,num_bloc,pos,trouv,confirm;
+TArticle n;
+LNOF *fichier;
+
+do
+{menu();
+printf("\nTAPEZ UN CHOIX SVP: ");
+confirm=scanf("%d",&choix);
+while((confirm!=1)||(choix<1)||(choix>8))
+{reglage();
+ printf("\nTAPEZ UN CHOIX SVP(entre 1 et 8): ");
+confirm=scanf("%d",&choix);
+}
+switch(choix)
+{
+    case 1:
+    {
+        printf("\n\t\t<<CREER UN NOUVEAU FICHIER>>");
+     printf("\nDonnez le nom de fichier a creer:");
+     scanf("%s",&nom_fich);
+     ouvrir(fichier,nom_fich,'N');
+     fermer(fichier);
+    }break;
+
+    case 2:
+    {
+        printf("\n\t\t<<INSERER DANS UN FICHIER>>");
+        printf("\nDonnez le nom de fichier vous allez inserer:");
+     scanf("%s",&nom_fich);
+        printf("\ncombien des etudiants voulez vous inserer?");
+        printf("\n le nombre= ");
+       confirm=scanf("%d",&nb_enreg);
+       while((confirm!=1)||(nb_enreg<0))
+       {reglage();
+           printf("\n Le nombre est errone retapez le svp");
+        printf("\n le nombre= ");
+        confirm=scanf("%d",&nb_enreg);
+       }
+        if (nb_enreg>0)
+        {printf("\nNB:si le nom est compose ecrivez le partie1_partie2");
+            for(i=0;i<nb_enreg;i++)
+        {
+            printf("\n donner l'enregistrement");
+            printf("\n*La cle= ");
+            confirm=scanf("%d",&n.cle);
+            while((confirm!=1)||(n.cle<0))
+            {reglage();
+            printf("\nDonnez la cle a nouveau elle fausse");
+            printf("\n*La cle= ");
+            confirm=scanf("%d",&n.cle);
+            }
+            printf("\n*Le nom= ");
+            scanf("%s",&n.nom);
+            insertion(fichier,nom_fich,&n);
+        }}
+    }break;
+
+    case 3:
+    {printf("\n\t\t<<SUPPRESSION LOGIQUE>>");
+        printf("\nDonnez le nom de fichier d'ou vous supprimerez:");
+     scanf("%s",&nom_fich);
+     printf("\n Donnez le matric a supprimer");
+     printf("\n*le matric=");
+     confirm=scanf("%d",&n.cle);
+     while((n.cle<0)||(confirm!=1))
+     {reglage();
+         printf("\nle matric est errone");
+      printf("\n*le matric=");
+     confirm=scanf("%d",&n.cle);
+     }
+     supprimer(fichier,nom_fich,n.cle);
+     }break;
+
+    case 4:
+    {
+      printf("\n\t\t<<AFFICHAGE>>");
+      printf("\nDonnez le nom de fichier a afficher:");
+     scanf("%s",&nom_fich);
+      affichage(fichier,nom_fich);
+    }break;
+
+    case 5:
+    {
+     printf("\n\t\t<<AFFICHAGE EN_TETE>>");
+      printf("\nDonnez le nom de fichier a afficher son en_tete:");
+     scanf("%s",&nom_fich);
+     affichage_entete(fichier,nom_fich);
+    }break;
+
+
+   case 6:
+    {
+      printf("\n\t\t<<RECHERCHE D'UN ENREGISTREMENT>>");
+      printf("\nDonnez le nom de fichier ou vous allez chercher la cle:");
+      scanf("%s",&nom_fich);
+      printf("\n Donnez le  matic a rechercher");
+     printf("\n*le matric=");
+     confirm=scanf("%d",&n.cle);
+     while((n.cle<0)||(confirm!=1))
+     {reglage();
+         printf("le matric est errone");
+      printf("\n*La cle=");
+    confirm= scanf("%d",&n.cle);
+     }
+     recherche(fichier,nom_fich,n.cle,&num_bloc,&pos,&trouv);
+     if (trouv==0) printf("\nCette enregistrement n'existe pas");
+     else printf("\n L'enregistrement existe dans le bloc %d a la position %d",num_bloc,pos);
+
+    }break
+
+    case 7: ;return 0   break;
+    default: printf("\nLe choix est errone");
+
+}
+printf("\nTapez 1 pour continuer :");
+scanf("%d",&continu);
+system("cls");
+}
+while (continu==1);
+
+
+}
+
