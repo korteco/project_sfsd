@@ -2,43 +2,44 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 #define MAX 3
 
-typedef struct {
-    int cle;
-    char info[200];
-   int efface;
+/*********************DECLARATION DES STRUCTURES*****************************/
+/*********structure d'article***********/
+typedef struct
+{   int cle;//la cl�
+    int efface;//le champs effac�
+    char nom[30];//type chaine de caractere
+}ETUDIANT;//la declaration de l'article
 
-} etudiant;
+typedef ETUDIANT tab [MAX];//le tableau de structure TArticle
 
-typedef etudiant tab [MAX];
-typedef struct {
-    int num_Btete;
-    int nb_enreg;
-    int nb_bloc;
-} TEn_Tete;
+/**************structure de bloc*******************/
+typedef struct
+{tab t;//tableau d'enregistrement
+int Nb;//le nombre d'enregistrement ds le tableau
+int suiv;//le n� de prochain bloc
+}TBloc;//declaration de bloc
 
-typedef struct TBloc {
-    tab t[MAX];
-    int suiv;
-    int nb;
+/**************structure d'en_tete***************/
+typedef struct
+{   int num_Btete;//le n� de bloc tete(premier)
+    int nb_enreg;//le nombre d'enregistrementd ds le fichier
+    int nb_bloc;//le numero de dernier bloc
+}TEn_Tete;//declaration du bloc en_tete
 
-    struct TBloc* svt;
-} TBloc;
-
-
-
-typedef struct {
-    TBloc* r;
-    TEn_Tete* en_tete;
-    FILE* f;
-    }Lnovnc;
+/************structure de fichierLNOF**************/
+typedef struct
+{   FILE *f;//declarer le fichier
+    TEn_Tete *en_tete;//declarer l'en_tete
+}LNOV;//declaration de la structure LNOF
 
 
+/***********************IMPLEMENTATION DU MODELE***************************************/
+                      /************OUVERTURE***************/
 
-/***************************OVERIR*************************/
-
-   void ouvrir (Lnovnc *fichier,char nom_fich[30],const char mode)//ouvrir un fichier de type LNOF en mode voulu
+void ouvrir (LNOV *fichier,char nom_fich[30],const char mode)//ouvrir un fichier de type LNOF en mode voulu
 {
 fichier->en_tete = malloc(sizeof(TEn_Tete));//allouer dynamiquement une zone en m�mo centrale pour l'en_tete
 if ((mode=='n')||(mode=='N'))//si le mode est nouveau ie:le fichier n'existe pas d�j� alors
@@ -63,8 +64,33 @@ if ((mode=='n')||(mode=='N'))//si le mode est nouveau ie:le fichier n'existe pas
 }
 
 
-  /****************AFF_ENTETE*******************/
-void af_entete(Lnovnc *fichier,int num_caract,int val)//affecter � la caracteristique num_caract la val
+                      /************FERMITURE***************/
+void fermer (LNOV *fichier)//fermer un fichier
+{   rewind(fichier->f);//on se positionne au debut de fichier
+    fwrite(fichier->en_tete,sizeof(TEn_Tete),1,fichier->f);//on enregistre les modifications effectu�es sur l'en_tete
+    fclose(fichier->f);//on ferme le fichier
+    free(fichier->en_tete);//liberer la zone en_tete reserv�e
+}
+
+
+                   /***************ECRITURE DIRECTE***********/
+void ecrire_dire(LNOV *fichier,int i,TBloc *buf)//ecriture directe du contenu de buf ds le fichier � la position i
+{   rewind(fichier->f);
+    fseek(fichier->f,sizeof(TEn_Tete)+i*sizeof(TBloc),SEEK_SET);//se positionner � la place exacte
+    fwrite(buf,sizeof(TBloc),1,fichier->f);//ecriture
+}
+
+
+                 /****************LECTURE DIRECTE*************/
+void lire_dire(LNOV *fichier,int i,TBloc *buf)//lecture directe du contenu de fichier � la position i ds le buf
+{   rewind(fichier->f);
+    fseek(fichier->f,sizeof(TEn_Tete)+i*sizeof(TBloc),SEEK_SET);//se positionner � la place exacte
+    fread(buf,sizeof(TBloc),1,fichier->f);//lecture
+}
+
+
+                /****************AFF_ENTETE*******************/
+void af_entete(LNOV *fichier,int num_caract,int val)//affecter � la caracteristique num_caract la val
 {
   switch(num_caract)
   {
@@ -77,7 +103,7 @@ void af_entete(Lnovnc *fichier,int num_caract,int val)//affecter � la caracter
 
 
              /*******************EN_TETE*********************/
-int en_tete(Lnovnc *fichier,int num_caract )//retourner la cracterstique num_caract ds val
+int en_tete(LNOV *fichier,int num_caract )//retourner la cracterstique num_caract ds val
 {int val;
     switch(num_caract)
   {
@@ -87,49 +113,15 @@ int en_tete(Lnovnc *fichier,int num_caract )//retourner la cracterstique num_car
       default: printf("\n\t\t<<Le numero errone>>");
   }
   return val;
-
-/***************ECRITURE DIRECTE***********/
-void ecrire_dire(Lnovnc *fichier,int i,TBloc *buf)//ecriture directe du contenu de buf ds le fichier � la position i
-{   rewind(fichier->f);
-    fseek(fichier->f,sizeof(TEn_Tete)+i*sizeof(TBloc),SEEK_SET);//se positionner � la place exacte
-    fwrite(buf,sizeof(TBloc),1,fichier->f);//ecriture
 }
 
 
-/****************LECTURE DIRECTE*************/
 
+/*****************************les programmes demand�s*********************/
 
-void lire_dire(Lnovnc *fichier,int i,TBloc *buf)//lecture directe du contenu de fichier � la position i ds le buf
-{   rewind(fichier->f);
-    fseek(fichier->f,sizeof(TEn_Tete)+i*sizeof(TBloc),SEEK_SET);//se positionner � la place exacte
-    fread(buf,sizeof(TBloc),1,fichier->f);//lecture
-
-
-
-/****************FERMITUR******************/
-
-
-void fermer (Lnovnc *fichier)//fermer un fichier
-{   rewind(fichier->f);//on se positionne au debut de fichier
-    fwrite(fichier->en_tete,sizeof(TEn_Tete),1,fichier->f);//on enregistre les modifications effectu�es sur l'en_tete
-    fclose(fichier->f);//on ferme le fichier
-    free(fichier->en_tete);//liberer la zone en_tete reserv�e
-
- /****************les demandes************************/
-
-
-
-
-
-
- /************************************recherch**********************************/
-
-
-
-
-  void recherche (Lnovnc *fichier,char nom_fich[30],int cle,int *num_bloc,int *pos,int *trouv)//module de recherche de la cle ds un fichier
-{
-    TBloc buf;//declarer un buffer
+                /*****************recherche*******************/
+void recherche (LNOV *fichier,char nom_fich[30],int cle,int *num_bloc,int *pos,int *trouv)//module de recherche de la cle ds un fichier
+{TBloc buf;//declarer un buffer
 int i,j,n;//donne le nummero de bloc courant
 
 ouvrir(fichier,nom_fich,'a');//ouvrir le fichier en mode ancien
@@ -140,18 +132,15 @@ ouvrir(fichier,nom_fich,'a');//ouvrir le fichier en mode ancien
         trouv=-1;} //retourner trouv � faux
         else
         {if((i!=-1)&&(n!=0))//sinon
-
         {
             *trouv=0;*pos=0;j=0;//initialiser les paramettres
             while((i!=-1)&&(*trouv==0))//tq on est pas arriv� � la fin de fichier et on a pas trouv� la cl�
             {
                 lire_dire(fichier,i,&buf);//lire le bloc i
-                if(buf.nb!=0)//tester s'il n'est pas vide
+                if(buf.Nb!=0)//tester s'il n'est pas vide
                 {
-
-
-    while((j<=MAX)&&(*trouv==0))//tq c'est pas la fin de tab d'enregistrements et non trouv
-    {if((buf.t[j].cle==cle)&&(buf.t[j].efface==0))//verifier chaque case si elle n'est pas effac�e
+                    while((j<=MAX)&&(*trouv==0))//tq c'est pas la fin de tab d'enregistrements et non trouv
+                    {if((buf.t[j].cle==cle)&&(buf.t[j].efface==0))//verifier chaque case si elle n'est pas effac�e
                         {//si v�rifi�
                             *trouv=1;//mettre trouv � vrai
                             *num_bloc=i;//retourner le numero de bloc
@@ -170,8 +159,10 @@ ouvrir(fichier,nom_fich,'a');//ouvrir le fichier en mode ancien
         }}}
 fermer(fichier);//fermer le fichier
 }
-/***************recherche de position libre********************/
-void rech_pos_lib(Lnovnc *fichier,char nom_fich[30],int *pos_lib,int *num_bloc,int *trouv)//rechercher la premi�re postion libre
+
+
+           /***************recherche de position libre********************/
+void rech_pos_lib(LNOV *fichier,char nom_fich[30],int *pos_lib,int *num_bloc,int *trouv)//rechercher la premi�re postion libre
 {int i,j;
 TBloc buf;
 
@@ -179,11 +170,12 @@ TBloc buf;
         ouvrir(fichier,nom_fich,'a');//ouvrir le fichier en mode ancien
         if (fichier->f!=NULL)//si le fichier existe
         {i=en_tete(fichier,1);//lire la premiere caract
+        if(i!=-1)
         {j=0;//initialiser j � la premiere case de tableau
             while((i!=-1)&&(*trouv==0))
             {
                 lire_dire(fichier,i,&buf);//lire le i �me bloc
-                if(buf.nb!=MAX)//tester s'il n'est pas completement rempli
+                if(buf.Nb!=MAX)//tester s'il n'est pas completement rempli
                 {while((j<=MAX)&&(*trouv==0))//tq on est pas arriv� � la fin du tableau et on a pas trouv� une case vide
                 {
                     if(buf.t[j].efface==1)//tester si la case est vide
@@ -204,13 +196,12 @@ TBloc buf;
 fermer(fichier);
 }
 
-/*******************alloc_bloc***********************/
 
-
-void alloc_bloc(Lnovnc *fichier,char nom_fich[30],TBloc *buf)//initialise un buffer
+          /*******************alloc_bloc***********************/
+void alloc_bloc(LNOV *fichier,char nom_fich[30],TBloc *buf)//initialise un buffer
 {int i;
  (*buf).suiv=-1;//initialiser le champs suiv � nil
- (*buf).nb=0;//initialiser le nb d'articles � 0
+ (*buf).Nb=0;//initialiser le nb d'articles � 0
  for(i=0;i<MAX;i++)
  {
      (*buf).t[i].efface=1;//initialiser tout les champs efface de tableau � vrai
@@ -219,10 +210,7 @@ void alloc_bloc(Lnovnc *fichier,char nom_fich[30],TBloc *buf)//initialise un buf
 
 
            /**********************insertion******************************/
-
-
-
-void insertion(Lnovnc *fichier,char nom_fich[30],etudiant *n)//inserer un enregistrement ds un fichier
+void insertion(LNOV *fichier,char nom_fich[30],ETUDIANT *n)//inserer un enregistrement ds un fichier
 {int trouv,trouve,i,j,pos_lib,num_bloc,affirm,k,reg=1;
 TBloc buf;
 ouvrir(fichier,nom_fich,'A');//ouvrir le fichier en mode ancien
@@ -262,41 +250,32 @@ if ((trouv==0)||(affirm==1))//si apr�s la recherche d'une position libre on l'
      alloc_bloc(fichier,nom_fich,&buf);//initialiser le nouveau bloc
      n->efface=0;
      buf.t[0]=*n;//mettre les infos dedans
-     buf.nb=1;//initialiser le nombre d'enregistrements ds le bloc
+     buf.Nb=1;//initialiser le nombre d'enregistrements ds le bloc
  }
  if(trouv==1)//s'il y'a une case vide
  {lire_dire(fichier,num_bloc,&buf);//lire le contenu du bloc correspendant
  n->efface=0;
 buf.t[pos_lib]=*n;//mettre les infos � l'endroit qui convient
-buf.nb= buf.nb+1;//incrementer le nombre d'articles
+buf.Nb= buf.Nb+1;//incrementer le nombre d'articles
  }
  i=en_tete(fichier,2);//lire le nombre d'articles ds le fichier
  i++;
 af_entete(fichier,2,i);//l'incrementer
 ecrire_dire(fichier,num_bloc,&buf);//ecrire le buffer
 end:fermer(fichier);//fermer le fichier
+}
 
 
-
-/*********************suppression*************************/
-
+                  /*********************suppression*************************/
 
 
-void supprimer(Lnovnc *fichier,char nom_fich[30],int cle) //suppression logique d'un enregistrement
+void supprimer(LNOV *fichier,char nom_fich[30],int cle)//suppression logique d'un enregistrement
 {int num_bloc,pos,trouv,i;
-
 TBloc buf;
-
 ouvrir(fichier,nom_fich,'a');//ouvrir le fichier en mode ancien
-
-
-
 fermer(fichier);//le fermer
-
 if (fichier->f!=NULL)
-
     {recherche(fichier,nom_fich,cle,&num_bloc,&pos,&trouv);//on recherche cette cle est ce qu'elle existe d�j�
-
     if(trouv==0)//si elle n'existe pas
     {
         printf("\n\t\t<<La cle n'existe pas>>");//le dire
@@ -306,7 +285,7 @@ if (fichier->f!=NULL)
     {   ouvrir(fichier,nom_fich,'a');
         lire_dire(fichier,num_bloc,&buf);//lire le bloc correspendant
         buf.t[pos].efface=1;//mettre le efface de la case convenable � vrai
-        buf.nb--;//decrementer le nmbre d'articles ds le bloc
+        buf.Nb--;//decrementer le nmbre d'articles ds le bloc
         i=en_tete(fichier,2);//lire la dexieme caract
         i--;
         af_entete(fichier,2,i);//decrementer le nmbre d'articles ds le fichier
@@ -316,10 +295,8 @@ if (fichier->f!=NULL)
 }
 
 
-/***************affichage*********************/
-
-
-void affichage (Lnovnc *fichier,char nom_fich[30])
+                /***************affichage*********************/
+void affichage (LNOV *fichier,char nom_fich[30])
 {int i,j,n;
 TBloc buf;
     ouvrir(fichier,nom_fich,'A');//ouvrir le fichier en mode ancien
@@ -333,12 +310,12 @@ TBloc buf;
 	printf("\t\t\t  L'Affichage  \n");
 	printf("\t\t\t==============\n");
 	printf("\t\t+----------+----------+\n");
-	printf("\t\t| matric  | etudiant|\n");
+	printf("\t\t|  La cle  | La Valeur|\n");
 	printf("\t\t+----------+----------+\n");
         while(i!=-1)//tant qu'on est pas arriv� � la fin de fichier
     {
         lire_dire(fichier,i,&buf);//lire le buf i
-        if (buf.nb!=0)
+        if (buf.Nb!=0)
         {
             for (j=0;j<MAX;j++)//parcourir tout le tableau
             {
@@ -355,15 +332,10 @@ TBloc buf;
     fermer(fichier);
 }
 
-
 /**********************affichage d'entete********************/
-
-void affichage_entete(Lnovnc *fichier,char nom_fich[30])//afficher les caracteristiques de fichier
-
+void affichage_entete(LNOV *fichier,char nom_fich[30])//afficher les caracteristiques de fichier
 {ouvrir(fichier,nom_fich,'a');//ouvrir le fichier en mode ancien
-
 if(fichier->f)//si le fichier existe on affiche toutes les caracteristiques
-
     {printf("\n\t\tAFFICHAGE EN_TETE");
     printf("\n\t***Numero du premier bloc=%d",en_tete(fichier,1));
     printf("\n\t***Le nombre des enregistrements=%d",en_tete(fichier,2));
@@ -371,12 +343,10 @@ if(fichier->f)//si le fichier existe on affiche toutes les caracteristiques
     fermer(fichier);
 }
 
-
-
-/*************MENU***********/
+                      /*************MENU***********/
 void menu (void)
 
-		{printf("\n\t\t               <<<<<<<LES FICHIERS Lnovnc>>>>>>>>");
+		{printf("\n\t\t                 <<<<<<<LES FICHIERS LNOF>>>>>>>>");
 		    printf ("\n\t\t ________________________________________________________________\n");
 		printf ("\t\t|\t                                                        |\n");
 	    printf ("\t\t|                   <<<< MENU PRINCIPALE >>>>                   |\n");
@@ -387,34 +357,29 @@ void menu (void)
 		printf ("\t\t|\t                                                        |\n");
 		printf ("\t\t|\t -2. Insertion dans un fichier existant ou non.         |\n");
 		printf ("\t\t|\t                                                        |\n");
-		printf ("\t\t|\t -3. Supprimer logiquement un etudiant.           |\n");
+		printf ("\t\t|\t -3. Supprimer logiquement un enregistrement.           |\n");
 		printf ("\t\t|\t                                                        |\n");
-		printf ("\t\t|\t -4. Affichage de toute les etudiant.                       |\n");
+		printf ("\t\t|\t -4. Affichage de toute la liste.                       |\n");
 		printf ("\t\t|\t                                                        |\n");
 		printf ("\t\t|\t -5. Affichage de l'entete.                             |\n");
 		printf ("\t\t|\t                                                        |\n");
-		printf ("\t\t|\t -6. Recherche d'un etudiant.                     |\n");
+		printf ("\t\t|\t -6. Recherche d'un enregistrement.                     |\n");
 		printf ("\t\t|\t                                                        |\n");
-		printf ("\t\t|\t                                                        |\n");
-		printf ("\t\t|\t -7 quitter                                            |\n");
+		printf ("\t\t|\t -8. Quitter                                            |\n");
 		printf ("\t\t|\t                                                        |\n");
         printf ("\t\t|_______________________________________________________________|\n");
 
-
-		}
-
-
-		int main()
-{  TBloc buf;
+int main()
+{TBloc buf;
 char nom_fich[30];
 int choix,continu,nb_enreg,i,num_bloc,pos,trouv,confirm;
-TArticle n;
-LNOF *fichier;
-
+ETUDIANT n;
+LNOV *fichier;
 do
-{menu();
+{
+    menu();
 printf("\nTAPEZ UN CHOIX SVP: ");
-confirm=scanf("%d",&choix);
+ confirm=scanf("%d",&choix);
 while((confirm!=1)||(choix<1)||(choix>8))
 {reglage();
  printf("\nTAPEZ UN CHOIX SVP(entre 1 et 8): ");
@@ -436,7 +401,7 @@ switch(choix)
         printf("\n\t\t<<INSERER DANS UN FICHIER>>");
         printf("\nDonnez le nom de fichier vous allez inserer:");
      scanf("%s",&nom_fich);
-        printf("\ncombien des etudiants voulez vous inserer?");
+        printf("\ncombien d'enregistrements voulez vous inserer?");
         printf("\n le nombre= ");
        confirm=scanf("%d",&nb_enreg);
        while((confirm!=1)||(nb_enreg<0))
@@ -468,13 +433,13 @@ switch(choix)
     {printf("\n\t\t<<SUPPRESSION LOGIQUE>>");
         printf("\nDonnez le nom de fichier d'ou vous supprimerez:");
      scanf("%s",&nom_fich);
-     printf("\n Donnez le matric a supprimer");
-     printf("\n*le matric=");
+     printf("\n Donnez la cle de l'enregistrement a supprimer");
+     printf("\n*La cle=");
      confirm=scanf("%d",&n.cle);
      while((n.cle<0)||(confirm!=1))
      {reglage();
-         printf("\nle matric est errone");
-      printf("\n*le matric=");
+         printf("\nLa cle est errone");
+      printf("\n*La cle=");
      confirm=scanf("%d",&n.cle);
      }
      supprimer(fichier,nom_fich,n.cle);
@@ -496,18 +461,17 @@ switch(choix)
      affichage_entete(fichier,nom_fich);
     }break;
 
-
-   case 6:
+    case 6:
     {
       printf("\n\t\t<<RECHERCHE D'UN ENREGISTREMENT>>");
       printf("\nDonnez le nom de fichier ou vous allez chercher la cle:");
       scanf("%s",&nom_fich);
-      printf("\n Donnez le  matic a rechercher");
-     printf("\n*le matric=");
+      printf("\n Donnez la cle de l'enregistrement a rechercher");
+     printf("\n*La cle=");
      confirm=scanf("%d",&n.cle);
      while((n.cle<0)||(confirm!=1))
      {reglage();
-         printf("le matric est errone");
+         printf("\nLa cle est errone");
       printf("\n*La cle=");
     confirm= scanf("%d",&n.cle);
      }
@@ -515,9 +479,11 @@ switch(choix)
      if (trouv==0) printf("\nCette enregistrement n'existe pas");
      else printf("\n L'enregistrement existe dans le bloc %d a la position %d",num_bloc,pos);
 
-    }break
+    }break;
 
-    case 7: ;return 0   break;
+
+
+    case 8: return 0; break;
     default: printf("\nLe choix est errone");
 
 }
@@ -526,7 +492,4 @@ scanf("%d",&continu);
 system("cls");
 }
 while (continu==1);
-
-
-}
-
+	}
