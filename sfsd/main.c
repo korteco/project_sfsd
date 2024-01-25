@@ -19,7 +19,7 @@ typedef struct {
 } TEn_Tete;
 
 typedef struct TBloc {
-    char t[MAX];
+    tab t[MAX];
     int suiv;
     int nb;
 
@@ -170,7 +170,111 @@ ouvrir(fichier,nom_fich,'a');//ouvrir le fichier en mode ancien
         }}}
 fermer(fichier);//fermer le fichier
 }
+/***************recherche de position libre********************/
+void rech_pos_lib(Lnovnc *fichier,char nom_fich[30],int *pos_lib,int *num_bloc,int *trouv)//rechercher la premi�re postion libre
+{int i,j;
+TBloc buf;
 
+*trouv=0;//initialiser le trouv � faux
+        ouvrir(fichier,nom_fich,'a');//ouvrir le fichier en mode ancien
+        if (fichier->f!=NULL)//si le fichier existe
+        {i=en_tete(fichier,1);//lire la premiere caract
+        {j=0;//initialiser j � la premiere case de tableau
+            while((i!=-1)&&(*trouv==0))
+            {
+                lire_dire(fichier,i,&buf);//lire le i �me bloc
+                if(buf.nb!=MAX)//tester s'il n'est pas completement rempli
+                {while((j<=MAX)&&(*trouv==0))//tq on est pas arriv� � la fin du tableau et on a pas trouv� une case vide
+                {
+                    if(buf.t[j].efface==1)//tester si la case est vide
+                    {//si oui
+                        *trouv=1;// trouv=vrai
+                        *num_bloc=i;//rerourner le i�me bloc et la j �me colonne
+                        *pos_lib=j;
+                    }
+
+                        j++;//aller � la prochaine case
+
+                }
+                }
+                i=buf.suiv;//aller au prochain bloc
+            }
+        }
+        }
+fermer(fichier);
+}
+
+/*******************alloc_bloc***********************/
+
+
+void alloc_bloc(Lnovnc *fichier,char nom_fich[30],TBloc *buf)//initialise un buffer
+{int i;
+ (*buf).suiv=-1;//initialiser le champs suiv � nil
+ (*buf).nb=0;//initialiser le nb d'articles � 0
+ for(i=0;i<MAX;i++)
+ {
+     (*buf).t[i].efface=1;//initialiser tout les champs efface de tableau � vrai
+ }
+ }
+
+
+           /**********************insertion******************************/
+
+
+
+void insertion(Lnovnc *fichier,char nom_fich[30],etudiant *n)//inserer un enregistrement ds un fichier
+{int trouv,trouve,i,j,pos_lib,num_bloc,affirm,k,reg=1;
+TBloc buf;
+ouvrir(fichier,nom_fich,'A');//ouvrir le fichier en mode ancien
+
+ if (fichier->f!=NULL)//si le fichier existe
+ {recherche(fichier,nom_fich,n->cle,&i,&j,&trouve);//on cherche la cl� si elle existe d�j�
+ while(trouve==1)//tant qu'elle existe on boucle
+{printf("\n\t\t<<<La cle existe deja>>>");
+printf("\ndonner la cle");
+reg=scanf("%d",&n->cle);
+    while((reg!=1)||(n->cle<0))
+{reglage();
+    printf("\nDonner la cle de nouveau elle est erronee");
+    reg=scanf("%d",&n->cle);
+}
+recherche(fichier,nom_fich,n->cle,&i,&j,&trouve);}
+
+rech_pos_lib(fichier,nom_fich,&pos_lib,&num_bloc,&trouv);}//rechercher la premiere position libre ds le fichier
+
+else//si le fichier n'existe pas
+{printf("...voulez vous l'inserer");//on demande une affirmation
+printf("\ntapez 1 si OUI,0 si NON");
+scanf("%d",&affirm);
+if (affirm==0) goto end;
+if (affirm==1)//si c'est confirm�
+{ouvrir(fichier,nom_fich,'n');//on ouvre le fichier en mode nouveau
+  fermer(fichier);}}
+ouvrir(fichier,nom_fich,'a');//on le r�ouvre en mode ancien
+if ((trouv==0)||(affirm==1))//si apr�s la recherche d'une position libre on l'a pas trouv�
+ {  num_bloc=en_tete(fichier,3);//recuperer le num de dernier bloc
+     if( num_bloc==-1) af_entete(fichier,1,0);//si fichier vide,mette le numero du premier bloc � 0
+     else {lire_dire(fichier,num_bloc,&buf);//sinon recuperer le contenu de dernier buffer
+     buf.suiv=num_bloc+1;//faire le chainage avec le nouveau bloc
+     ecrire_dire(fichier,num_bloc,&buf);}//sauvegarder les modifications
+     num_bloc=num_bloc+1;//incrementer le numero de dernier bloc
+     af_entete(fichier,3,num_bloc);//sauvegarder ds l'entete
+     alloc_bloc(fichier,nom_fich,&buf);//initialiser le nouveau bloc
+     n->efface=0;
+     buf.t[0]=*n;//mettre les infos dedans
+     buf.nb=1;//initialiser le nombre d'enregistrements ds le bloc
+ }
+ if(trouv==1)//s'il y'a une case vide
+ {lire_dire(fichier,num_bloc,&buf);//lire le contenu du bloc correspendant
+ n->efface=0;
+buf.t[pos_lib]=*n;//mettre les infos � l'endroit qui convient
+buf.nb= buf.nb+1;//incrementer le nombre d'articles
+ }
+ i=en_tete(fichier,2);//lire le nombre d'articles ds le fichier
+ i++;
+af_entete(fichier,2,i);//l'incrementer
+ecrire_dire(fichier,num_bloc,&buf);//ecrire le buffer
+end:fermer(fichier);//fermer le fichier
 
 
 
