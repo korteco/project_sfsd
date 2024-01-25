@@ -160,8 +160,41 @@ fermer(fichier);//fermer le fichier
 }
 
 
-void Recuperer_chaine(int n, int i, int j, int *longeur, char *chaine) {
-    *longeur = n;
-    strncpy(chaine, buf.tab + j - 1, n);
-    chaine[n] = '\0';
+
+
+/*********************suppression*************************/
+
+
+
+void supprimer(Lnovnc *fichier,char nom_fich[30],int cle)//suppression logique d'un enregistrement
+{int num_bloc,pos,trouv,i;
+
+TBloc buf;
+
+ouvrir(fichier,nom_fich,'a');//ouvrir le fichier en mode ancien
+
+
+
+fermer(fichier);//le fermer
+
+if (fichier->f!=NULL)
+
+    {recherche(fichier,nom_fich,cle,&num_bloc,&pos,&trouv);//on recherche cette cle est ce qu'elle existe d�j�
+
+    if(trouv==0)//si elle n'existe pas
+    {
+        printf("\n\t\t<<La cle n'existe pas>>");//le dire
+    }
+    else
+        {if(trouv==1)//sinon
+    {   ouvrir(fichier,nom_fich,'a');
+        lire_dire(fichier,num_bloc,&buf);//lire le bloc correspendant
+        buf.t[pos].efface=1;//mettre le efface de la case convenable � vrai
+        buf.NbArticle--;//decrementer le nmbre d'articles ds le bloc
+        i=en_tete(fichier,2);//lire la dexieme caract
+        i--;
+        af_entete(fichier,2,i);//decrementer le nmbre d'articles ds le fichier
+        ecrire_dire(fichier,num_bloc,&buf);//enregistrer ces modifications ds le fichier
+        fermer(fichier);//fermer le fichier
+    }}}
 }
