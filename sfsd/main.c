@@ -2,7 +2,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MAX 3
 
+typedef struct {
+    int cle;
+    char info[200];
+   int efface;
+
+} etudiant;
+
+typedef etudiant tab [MAX];
 typedef struct {
     int num_Btete;
     int nb_enreg;
@@ -11,18 +20,13 @@ typedef struct {
 
 typedef struct TBloc {
     char info[20];
-    int next;
+    int suiv;
     int nb;
 
     struct TBloc* svt;
 } TBloc;
 
-typedef struct {
-    int cle;
-    char info[200];
-   int deletecle;
 
-} etudiant;
 
 typedef struct {
     TBloc* r;
@@ -30,7 +34,6 @@ typedef struct {
     FILE* physicalFile;
     }Lnovnc;
 
-   TBloc buf;
 
 
 /***************************OVERIR*************************/
@@ -166,7 +169,7 @@ fermer(fichier);//fermer le fichier
 
 
 
-void supprimer(Lnovnc *fichier,char nom_fich[30],int cle)//suppression logique d'un enregistrement
+void supprimer(Lnovnc *fichier,char nom_fich[30],int cle) //suppression logique d'un enregistrement
 {int num_bloc,pos,trouv,i;
 
 TBloc buf;
@@ -190,11 +193,51 @@ if (fichier->f!=NULL)
     {   ouvrir(fichier,nom_fich,'a');
         lire_dire(fichier,num_bloc,&buf);//lire le bloc correspendant
         buf.t[pos].efface=1;//mettre le efface de la case convenable � vrai
-        buf.NbArticle--;//decrementer le nmbre d'articles ds le bloc
+        buf.nb--;//decrementer le nmbre d'articles ds le bloc
         i=en_tete(fichier,2);//lire la dexieme caract
         i--;
         af_entete(fichier,2,i);//decrementer le nmbre d'articles ds le fichier
         ecrire_dire(fichier,num_bloc,&buf);//enregistrer ces modifications ds le fichier
         fermer(fichier);//fermer le fichier
     }}}
+}
+
+
+/***************affichage*********************/
+
+
+void affichage (Lnovnc *fichier,char nom_fich[30])
+{int i,j,n;
+TBloc buf;
+    ouvrir(fichier,nom_fich,'A');//ouvrir le fichier en mode ancien
+    if(fichier->f!=NULL)//si le fichier existe
+    {i=en_tete(fichier,1);//recup�rer le num�ro du premier bloc
+     n=en_tete(fichier,2);//recup�rer le nombre d'enregistrements
+
+    if (n!=0)//si le fichier n'est pas vide
+    {
+    printf("\t\t\t==============\n");
+	printf("\t\t\t  L'Affichage  \n");
+	printf("\t\t\t==============\n");
+	printf("\t\t+----------+----------+\n");
+	printf("\t\t|  La cle  | La Valeur|\n");
+	printf("\t\t+----------+----------+\n");
+        while(i!=-1)//tant qu'on est pas arriv� � la fin de fichier
+    {
+        lire_dire(fichier,i,&buf);//lire le buf i
+        if (buf.nb!=0)
+        {
+            for (j=0;j<MAX;j++)//parcourir tout le tableau
+            {
+                if (buf.t[j].efface==0)//chercher les positions non �ffac�es pour les afficher
+                {printf("\t\t| %-8d | %-8s |\n",buf.t[j].cle,buf.t[j].nom);
+                printf("\t\t+----------+----------+\n");
+                }
+            }
+        }
+        i=buf.suiv;//aller au prochain bloc
+    }
+    }
+    else printf("\n \t\t<<Le fichier est vide>>");}
+    fermer(fichier);
 }
