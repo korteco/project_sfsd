@@ -241,3 +241,19 @@ TBloc buf;
     else printf("\n \t\t<<Le fichier est vide>>");}
     fermer(fichier);
 }
+
+
+/**********************affichage d'entete********************/
+
+void affichage_entete(Lnovnc *fichier,char nom_fich[30])//afficher les caracteristiques de fichier
+
+{ouvrir(fichier,nom_fich,'a');//ouvrir le fichier en mode ancien
+
+if(fichier->f)//si le fichier existe on affiche toutes les caracteristiques
+
+    {printf("\n\t\tAFFICHAGE EN_TETE");
+    printf("\n\t***Numero du premier bloc=%d",en_tete(fichier,1));
+    printf("\n\t***Le nombre des enregistrements=%d",en_tete(fichier,2));
+    printf("\n\t***Numero du dernier bloc=%d",en_tete(fichier,3));}
+    fermer(fichier);
+}
